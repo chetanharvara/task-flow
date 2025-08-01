@@ -269,10 +269,32 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+// export function useTask() {
+//   const context = useContext(TaskContext)
+//   if (!context) {
+//     throw new Error("useTask must be used within a TaskProvider")
+//   }
+//   return context
+// }
+
 export function useTask() {
   const context = useContext(TaskContext)
   if (!context) {
     throw new Error("useTask must be used within a TaskProvider")
   }
-  return context
+
+  // Add addUser and deleteUser implementations
+  const addUser = (user: User) => {
+    context.dispatch({ type: "ADD_USER", payload: user })
+  }
+
+  const deleteUser = (userId: string) => {
+    context.dispatch({ type: "DELETE_USER", payload: userId })
+  }
+
+  return {
+    ...context,
+    addUser,
+    deleteUser,
+  }
 }
