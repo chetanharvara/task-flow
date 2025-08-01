@@ -16,7 +16,7 @@ export interface Task {
   projectId: string
   parentTaskId?: string
   subtasks: Task[]
-  customFields: Record<string, any>
+  customFields: Record<string, string | number | boolean>
   tags: string[]
   order: number
 }
@@ -43,6 +43,8 @@ type TaskAction =
   | { type: "DELETE_TASK"; payload: string }
   | { type: "REORDER_TASKS"; payload: { tasks: Task[] } }
   | { type: "SET_USERS"; payload: User[] }
+  | { type: "ADD_USER"; payload: User }
+  | { type: "DELETE_USER"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
 
@@ -77,6 +79,13 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
       return { ...state, tasks: action.payload.tasks }
     case "SET_USERS":
       return { ...state, users: action.payload }
+    case "ADD_USER":
+      return { ...state, users: [...state.users, action.payload] }
+    case "DELETE_USER":
+      return {
+        ...state,
+        users: state.users.filter((user) => user.id !== action.payload),
+      }
     case "SET_LOADING":
       return { ...state, loading: action.payload }
     case "SET_ERROR":
@@ -96,6 +105,8 @@ const TaskContext = createContext<{
   getTasksByStatus: (status: string) => Task[]
   getTasksByProject: (projectId: string) => Task[]
   getUserById: (id: string) => User | undefined
+  addUser: (user: User) => void
+  deleteUser: (userId: string) => void
 } | null>(null)
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
@@ -250,6 +261,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return state.users.find((user) => user.id === id)
   }
 
+  const addUser = (user: User) => {
+    dispatch({ type: "ADD_USER", payload: user })
+  }
+
+  const deleteUser = (userId: string) => {
+    dispatch({ type: "DELETE_USER", payload: userId })
+  }
+
   return (
     <TaskContext.Provider
       value={{
@@ -262,6 +281,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         getTasksByStatus,
         getTasksByProject,
         getUserById,
+        addUser,
+        deleteUser,
       }}
     >
       {children}
@@ -282,19 +303,5 @@ export function useTask() {
   if (!context) {
     throw new Error("useTask must be used within a TaskProvider")
   }
-
-  // Add addUser and deleteUser implementations
-  const addUser = (user: User) => {
-    context.dispatch({ type: "ADD_USER", payload: user })
-  }
-
-  const deleteUser = (userId: string) => {
-    context.dispatch({ type: "DELETE_USER", payload: userId })
-  }
-
-  return {
-    ...context,
-    addUser,
-    deleteUser,
-  }
+  return context
 }
